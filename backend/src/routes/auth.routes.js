@@ -4,5 +4,5 @@ const authController=require("../controllers/auth.controller")
 
 router.post("/register",authController.userRegisterController) // POST/API/AUTH/REGISTER
 router.post("/login",authController.userLoginController)
-router.post("/logout",authController.userLoginController)
+
 module.exports=router;  // SOMETHING TIME PASS HAS BEEN ADDED
