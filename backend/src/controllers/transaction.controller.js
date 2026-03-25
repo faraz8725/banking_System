@@ -1,7 +1,72 @@
 const transactionModel=require("../models/transaction.model");
 const ledgerModel=require("../models/ledger.model")
-
+const accountModel=require("../models/account.model")
+const emailService=require("../services/email.service")
+const mongoose=require("mongoose")
 async function createTransaction(req,res){
 
   const {fromAccount,toAccount,amount,idempotencyKey}=req.body
+
+  if(!fromAccount || !toAccount || !amount || !idempotencyKey){
+    return res.status(400).json({
+      message:"fromAccount,toAccount,amount,idempotencyKey are required "
+    })
+
+  }
+
+  const fromUserAccount=await accountModel.findOne({
+    _id:fromAccount,
+  })
+  const toUserAccount=await accountModel.findOne({
+    _id:toAccount,
+  })
+  if(!fromUserAccount || !toUserAccount){
+    return res.status(400).json({
+      message:"Invalid fromAccount or toAccount"
+    })
+  }
+
+  /* CHECKING THE TRANSACTION STATUS*/
+
+  const isTransactionAlreadyExists=await transactionModel.findOne({
+    idempotencyKey:idempotencyKey
+  })
+  if(isTransactionAlreadyExists){
+    if(isTransactionAlreadyExists.status==="COMPLETED"){
+      return res.status(200).json({
+        message:"Transaction already processed",
+        transaction:isTransactionAlreadyExists
+      })
+    }
+    if(isTransactionAlreadyExists.status==="PENDING"){
+      return res.status.json({
+        message:"Transaction is still processing"
+      })
+    }
+    if(isTransactionAlreadyExists.status==="FAILED"){
+      return res.status(500).json({
+        message:"Transaction processing get Failed"
+      })
+    }
+    if(isTransactionAlreadyExists.status==="REVERSED"){
+     return res.status(500).json({
+        message:"Transaction is reversed please try again"
+      })
+    }
+  }
+  /* CHECK WHETHER ACCOUNTS ARE ACTIVE TO SEND OR RECEIVE MONEY*/
+  if(fromUserAccount.status !=="ACTIVE" || toUserAccount.status!=="ACTIVE"){
+    return res.status(400).json({
+      message:"Both fromAccount and toAccount must be ACTIVE to process transaction"
+    })
+  }
+  /* CHECK USER HAVE SUFFICIENT AMOUNT TO GET TRANSFER MONEY OR NOT*/
+const balance=await fromUserAccount.getBalance()
+if(balance<amount){
+  return res.status(400).json({
+    message:`Insufficient balance.Current balance is ${balance}.Requested amount is ${amount}`
+  })
+}
+const session=await mongoose.startSession()
+
 }
