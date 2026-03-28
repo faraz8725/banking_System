@@ -26,7 +26,7 @@ return next()
 
 async function authSystemUserMiddleware(req,res,next)
 {
-  const token=re.cookies.token || req.headers.authorization?.split("")[1]
+  const token=req.cookies.token || req.headers.authorization?.split("")[1]
   if(!token){
     return res.status(400).json({
       message:"Unauthorized access,token is missing"
@@ -51,5 +51,6 @@ async function authSystemUserMiddleware(req,res,next)
   }
 }
 module.exports={
-  authMiddleware
+  authMiddleware,
+  authSystemUserMiddleware 
 }
